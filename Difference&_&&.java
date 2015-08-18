@@ -20,19 +20,18 @@ public class HelloWorld
   
   public static void main(String[] args)
   {
-  //**************************************
-  inside func1
-  inside func2
-  false
-  //**************************************
+  /**************************************
+  * inside func1
+  * inside func2
+  * false
+  **************************************/
   System.out.println(func1() & func2());
     
   
-  //**************************************
-  inside func1
-  
-  false
-  //**************************************
+  /**************************************
+  * inside func1
+  * false
+  **************************************/
   System.out.println(func1() && func2());  
   }
 }
