@@ -5,7 +5,7 @@ import java.lang.Math;
 import java.util.Arrays;
 
 
-public class HelloWorld
+public class RotateArray
 {
   public static void main(String[] args){
   	
