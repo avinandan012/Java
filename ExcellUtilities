@@ -35,6 +35,9 @@ public class ExcellUtilities {
 		return s.toString()+(rowIndex+1);
 				
 	}
+	
+	// use this method if the excell file has formulae(s) and Namebox defined
+	
 	public static String getCellContentExactlyAsSeen(Cell cell) 
 	{
 		String cellContentAsSeen ="";
