@@ -1,0 +1,100 @@
+// while using apche poi
+// use 
+
+public class ExcellUtilities {
+	
+	
+	public static String getCellReference(Cell cell){
+		return ExcellUtilities.getCellReference(cell.getColumnIndex(),cell.getRowIndex());
+	}
+	
+	
+	public static String getCellReference(int columnIndex, int rowIndex)
+	{
+		Map<Integer,Character> charMap = new HashMap<Integer,Character>();
+		
+		for(int i=65,j=0;i<65+26;i++,j++)
+		{
+			char c = (char)i;
+			charMap.put(j, c);
+		}
+
+		
+		
+		StringBuilder s =new  StringBuilder();
+		
+		if(columnIndex<=25){
+			s.append(charMap.get(columnIndex));
+		}
+		else
+		{
+			s.append(charMap.get(columnIndex/26-1));
+			s.append(charMap.get(columnIndex%26));
+		}
+
+		return s.toString()+(rowIndex+1);
+				
+	}
+	public static String getCellContentExactlyAsSeen(Cell cell) 
+	{
+		String cellContentAsSeen ="";
+		
+		 XSSFCell c = (XSSFCell)cell; 
+		 if(cell.getCellType() == Cell.CELL_TYPE_FORMULA){
+
+			String s =c.getRawValue();
+			boolean isFloat = false;
+			
+			
+			try{
+				Double.parseDouble(s);
+				isFloat = true;
+			}
+			catch(Exception e){
+				isFloat = false;
+			}
+			if(isFloat){
+				String format = cell.getCellStyle().getDataFormatString();
+					if(format.contains("/")){
+								
+								//String dateFormant = cell.getCellStyle().getDataFormatString();
+								String dateFormant = "dd/MM/yyyy";
+								DateFormat df = new SimpleDateFormat(dateFormant);
+								String requiredDate = df.format(cell.getDateCellValue()).toString();
+								cellContentAsSeen = requiredDate;
+			
+					}else if(format.equalsIgnoreCase("General")){
+								cellContentAsSeen = s;
+					}else{
+							
+							
+								DecimalFormat df = new DecimalFormat(format);
+								cellContentAsSeen = df.format(Double.parseDouble(s))+"";
+		
+					}
+			}else{
+	
+				cellContentAsSeen = s;
+			}
+		}else{
+			cellContentAsSeen = cell.getStringCellValue();
+		}
+	
+		 //"$"1,500
+		 if(cellContentAsSeen.contains("\"$\"")){
+			 cellContentAsSeen = cellContentAsSeen.replace("\"$\"","$");
+			
+		}
+		if(cellContentAsSeen.contains("&amp;"))
+		{
+			
+			cellContentAsSeen = cellContentAsSeen.replaceAll("&amp;","&(?!amp;)");
+		}
+	
+	
+		return cellContentAsSeen.trim();
+
+	}
+
+
+}
