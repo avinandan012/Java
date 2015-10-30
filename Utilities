@@ -1,0 +1,303 @@
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.InputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.text.NumberFormat;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.Map.Entry;
+
+import org.apache.log4j.Logger;
+
+public class Utilities {
+
+	static Logger log = Logger.getLogger(Utilities.class.getName());
+
+	/*
+	 * Desc : Given a Map<String,String> return the key for a given value. One -
+	 * to -one mapping(one key points to one value) Input :
+	 * java.util.Map,java.lang.String Output: java.lang.String
+	 */
+	public static String getKeyByValue(Map<String, String> map, String value) {
+		for (Entry<String, String> entry : map.entrySet()) {
+			if (Objects.equals(value, entry.getValue())) {
+				return entry.getKey();
+			}
+		}
+		return "";
+	}
+
+	/*
+	 * Desc : If a Map has same value for multiple keys. In that case we get a
+	 * Set of keys for that value. So returning a boolean many - to - one
+	 * mapping Input : java.util.Map,java.lang.String Output: boolean
+	 */
+	public static boolean isKeyFound(Map<String, String> map, String value) {
+		log.info("Received value :" + value);
+		Set<String> keys = new HashSet<String>();
+		log.info("searching Program map for keys....");
+		int i = 0;
+		for (Entry<String, String> entry : map.entrySet()) {
+
+			if (Objects.equals(value, entry.getValue())) {
+				log.info("Found key :\"" + entry.getKey() + "\" at index:" + i
+						+ ".");
+				keys.add(entry.getKey());
+			}
+			i++;
+		}
+		if (keys.size() > 0) {
+			return true;
+		}
+		return false;
+	}
+
+	/*
+	 * Desc : Gives a file extension as a text Input : java.io.File Output:
+	 * java.lang.String
+	 */
+
+	public static String getFileExtension(File file) {
+
+		return getFileExtension(file.getName());
+	}
+
+	public static String getFileExtension(String fileName) {
+		if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
+			return fileName.substring(fileName.lastIndexOf(".") + 1);
+		else
+			return "";
+	}
+
+	/*
+	 * Desc : Gives a new file name if you are writing same file again and
+	 * again. Input : "New text document.txt" Output : "New text document_1.txt"
+	 * 
+	 * Input : "New text document_1.txt" Output : "New text document_2.txt"
+	 */
+
+	public static String getNewFilename(File file) {
+
+		String ext = getFileExtension(file);
+		String fileName = file.getName();
+		String newName = "";
+		if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
+			String lastChar = fileName.substring(fileName.lastIndexOf(".") - 1,
+					fileName.lastIndexOf('.'));
+			String secondLastChar = fileName.substring(
+					fileName.lastIndexOf(".") - 2,
+					fileName.lastIndexOf(".") - 1);
+
+			if (secondLastChar.equals("_")) {
+				if (!Character.isAlphabetic(lastChar.charAt(0))) {
+					int var = Integer.parseInt(lastChar) + 1;
+					newName = fileName.substring(0, fileName.lastIndexOf("_"))
+							+ "_" + var + "." + ext;
+				} else {
+					newName = fileName.substring(0,
+							fileName.lastIndexOf("_") + 2)
+							+ "_"
+							+ 1
+							+ "."
+							+ ext;
+				}
+			} else {
+				newName = fileName.substring(0, fileName.lastIndexOf("."))
+						+ "_" + 1 + "." + ext;
+
+			}
+
+		}
+
+		return newName;
+	}
+
+	/*
+	 * Desc : Moves a file to one directory to another. If file with same name
+	 * exists overwrites it. Move means copying to destination directory and
+	 * deleting from source directory.
+	 * 
+	 * Input : FileName[fileName] , Destination Directory[toDir], Source
+	 * Directory[fromDir] Output : Moves a file. Returns [true] if movement
+	 * successful, [false] if can't move file.
+	 */
+	public static boolean moveFile(String fileName, String toDir, String fromDir)
+			throws IOException {
+
+		boolean fileMoveSuccess = false;
+		String newFileName = null;
+		if (fileName != null && fileName != "") {
+			// newFileName = getOriginalFileName(newFileName);
+			String inputFileWithoutExt = fileName.substring(0,
+					fileName.lastIndexOf("."));
+
+			String appendTimeStamp = new SimpleDateFormat("-MMddyyyy-hh_mm_ss")
+					.format(new Date());
+
+			inputFileWithoutExt = getOriginalFileName(inputFileWithoutExt)
+					+ appendTimeStamp;
+			newFileName = inputFileWithoutExt + "."
+					+ getFileExtension(fileName);
+			log.info("Moving file \"" + fileName + "\" from " + fromDir
+					+ " to " + toDir);
+
+			String fromPath = fromDir + "\\" + fileName;
+			String toPath = toDir + "\\" + newFileName;
+
+			File f = new File(fromPath);
+			File newFile = new File(toPath);
+
+			Path source = FileSystems.getDefault().getPath(fromPath);
+			Path destination = FileSystems.getDefault().getPath(toPath);
+
+			if (f.exists()) {
+				Files.move(source, destination,
+						StandardCopyOption.REPLACE_EXISTING);
+
+				fileMoveSuccess = true;
+
+			} else {
+				f.renameTo(newFile);
+				fileMoveSuccess = true;
+			}
+			log.info("File movement successful for \"" + fileName + "\" from "
+					+ fromDir + " to " + toDir);
+		}
+		return fileMoveSuccess;
+	}
+
+	/*
+	 * Desc : Check if a Directory is empty Input : java.nio.file.Path Output :
+	 * true if empty, false is not empty
+	 */
+	public static boolean isDirEmpty(final Path directory) throws IOException {
+		try (DirectoryStream<Path> dirStream = Files
+				.newDirectoryStream(directory)) {
+			return !dirStream.iterator().hasNext();
+		}
+	}
+
+	/*
+	 * Desc : Write a text file.Input :
+	 */
+	public static void writeFailureReasonFile(String inputFileName,
+			String fileContent, String inputDirectory) throws IOException {
+					
+		
+		String inputFileWithoutExt = null;
+
+		if (inputFileName != null && inputFileName != "") {
+			inputFileWithoutExt = inputFileName.substring(0,
+					inputFileName.lastIndexOf("."));
+
+			String appendTimeStamp = new SimpleDateFormat("-MMddyyyy-hh_mm_ss")
+					.format(new Date());
+			inputFileWithoutExt = getOriginalFileName(inputFileWithoutExt);
+			inputFileWithoutExt = inputFileWithoutExt + appendTimeStamp;
+
+			File file = new File(inputDirectory + "\\" + inputFileWithoutExt
+					+ "_errored.txt");
+			// if file doesnt exists, then create it
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+
+			FileWriter fw = new FileWriter(file.getAbsoluteFile());
+			BufferedWriter bw = new BufferedWriter(fw);
+			bw.write(fileContent);
+			bw.close();
+			log.error("Error text file generated for " + inputFileName + ".");
+
+		}
+
+	}
+
+	public static boolean isNumeric(String str) {
+		if (str.length() == 0) {
+			return false;
+		} else {
+			NumberFormat formatter = NumberFormat.getInstance();
+			ParsePosition pos = new ParsePosition(0);
+			formatter.parse(str, pos);
+			return str.length() == pos.getIndex();
+		}
+	}
+
+	public static String getOriginalFileName(
+			String fileNameWithPreviousTimeStamp) {
+
+		String output = "";
+
+		String arr[] = fileNameWithPreviousTimeStamp.split("-");
+
+		for (int i = 0; i < arr.length; i++) {
+
+			if (Utilities.isNumeric(arr[i])) {
+				if (arr[i - 1].equals("")) {
+					break;
+				}
+			} else {
+				String subArr[] = arr[i].split("_");
+
+				if ((subArr.length > 0)) {
+					if (!Utilities.isNumeric(subArr[0])) {
+						output = output + arr[i] + "-";
+					}
+
+				}
+			}
+
+		}
+
+		return output.replaceAll("-+$", "");
+	}
+
+	public static Properties loadProperties(String propertiesFileAddress)
+			throws FileNotFoundException, IOException {
+
+		log.info("Loading Application settings ...");
+
+		InputStream fileInput = Utilities.class
+				.getResourceAsStream(propertiesFileAddress);
+
+		Properties properties = new Properties();
+		properties.load(fileInput);
+		if ((fileInput == null) || (properties.size() == 0)) {
+			log.error("Error occured when reading properties file : "
+					+ propertiesFileAddress + ".");
+			throw new IOException(
+					"Error occured when reading properties file : "
+							+ propertiesFileAddress + ".");
+		}
+		fileInput.close();
+
+		Enumeration<?> enuKeys = properties.keys();
+		while (enuKeys.hasMoreElements()) {
+			String key = (String) enuKeys.nextElement();
+			String value = properties.getProperty(key);
+
+			System.out
+					.println("Property found : " + key + " [ " + value + " ]");
+
+		}
+		log.info("Application properties loaded  : " + properties.toString());
+
+		return properties;
+	}
+
+}
